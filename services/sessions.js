@@ -1,12 +1,19 @@
 import { useMultiFileAuthState } from '@whiskeysockets/baileys'
+import fs from 'fs/promises'
+import path from 'path'
 
 export class SessionManager {
     constructor() {
         this.sessions = new Map()
+        this.baseFolder = './sessions'
+    }
+
+    getSessionFolder(deviceId) {
+        return path.join(this.baseFolder, `baileys_auth_info_${deviceId}`)
     }
 
     async createSession(deviceId) {
-        const sessionFolder = `baileys_auth_info_${deviceId}`
+        const sessionFolder = this.getSessionFolder(deviceId)
         const { state, saveCreds } = await useMultiFileAuthState(sessionFolder)
         return { state, saveCreds }
     }

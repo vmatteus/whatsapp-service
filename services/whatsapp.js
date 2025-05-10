@@ -2,6 +2,14 @@ import pkg from '@whiskeysockets/baileys'
 import { logger } from '../config/logger.js'
 import { sessionManager } from './sessions.js'
 import EventEmitter from 'events'
+import { Boom } from '@hapi/boom'
+
+const CONNECTION_STATUS = {
+    CONNECTED: 'connected',
+    CONNECTING: 'connecting',
+    DISCONNECTED: 'disconnected',
+    ERROR: 'error'
+}
 
 const { 
     makeWASocket,
@@ -15,6 +23,42 @@ const {
 const eventEmitter = new EventEmitter()
 
 let qrCodes = new Map()
+
+export const checkDeviceConnection = async (deviceId = 'default') => {
+    try {
+        const sock = sessionManager.getSession(deviceId)
+        if (!sock) {
+            return {
+                status: CONNECTION_STATUS.DISCONNECTED,
+                message: 'Device not initialized',
+            }
+        }
+
+        // Try to get connection state by sending presence update
+        await sock.sendPresenceUpdate('available')
+        
+        return {
+            status: CONNECTION_STATUS.CONNECTED,
+            message: 'Device is connected and responding',
+        }
+    } catch (error) {
+        // Check if error is from Baileys
+        if (error instanceof Boom) {
+            return {
+                status: CONNECTION_STATUS.ERROR,
+                message: error.output.payload.message,
+                error: error.output.payload.error,
+                timestamp: new Date().toISOString()
+            }
+        }
+
+        return {
+            status: CONNECTION_STATUS.ERROR,
+            message: error.message,
+            timestamp: new Date().toISOString()
+        }
+    }
+}
 
 export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
     const sock = sessionManager.getSession(deviceId)
@@ -68,15 +112,7 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
 
             const { type: msgType, content } = extractMessageContent(message)
             
-            console.log('Nova mensagem recebida:', {
-                deviceId,
-                type,
-                messageType: msgType,
-                from: message.key.remoteJid,
-                content,
-                timestamp: new Date(message.messageTimestamp * 1000).toISOString(),
-                pushName: message.pushName
-            })
+            console.log('Nova mensagem recebida:', messages)
         }
     })
 
@@ -94,14 +130,20 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
                 startWhatsAppConnection(deviceId)
             } else {
                 console.log(`Device ${deviceId}: Connection closed. You are logged out.`)
-                sessionManager.removeSession(deviceId)
             }
         }
 
         if(connection === 'open') {
-            // Clear QR code when connected
             qrCodes.delete(deviceId)
             console.log(`Device ${deviceId}: connected successfully`)
+            
+            // Add periodic connection check
+            setInterval(async () => {
+                const status = await checkDeviceConnection(deviceId)
+                if (status.status !== CONNECTION_STATUS.CONNECTED) {
+                    console.log(`Device ${deviceId}: Connection check failed`, status)
+                }
+            }, 30000) // Check every 30 seconds
         }
         
         console.log(`Device ${deviceId}: connection update`, update)

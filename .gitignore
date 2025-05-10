@@ -38,6 +38,7 @@ pids
 baileys_auth_info*
 *.store.json
 boot_analytics_test.json
+sessions/
 
 # Coverage directory used by tools like istanbul
 coverage/
@@ -45,3 +46,7 @@ coverage/
 # Compiled binary addons
 dist/
 build/
+
+# Database
+*.sqlite
+

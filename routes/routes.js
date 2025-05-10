@@ -1,5 +1,6 @@
 import express from 'express'
-import { sendMessageWTyping, isConnected, listDevices, startWhatsAppConnection, getQRCode } from '../services/whatsapp.js'
+import { sendMessageWTyping, isConnected, startWhatsAppConnection, getQRCode, checkDeviceConnection } from '../services/whatsapp.js'
+import DeviceModel from '../models/device_model.js'
 
 const router = express.Router()
 
@@ -35,11 +36,6 @@ router.post('/send-message', async (req, res) => {
     }
 })
 
-router.get('/devices', (req, res) => {
-    const devices = listDevices()
-    res.json({ devices })
-})
-
 router.post('/connection', async (req, res) => {
     try {
         const { deviceId } = req.body
@@ -49,6 +45,17 @@ router.post('/connection', async (req, res) => {
                 error: 'deviceId is required' 
             })
         }
+
+        DeviceModel.findOrCreate({
+            where: { id: deviceId },
+            defaults: { isConnected: false }
+        }).then(([device, created]) => {
+            if (created) {
+                console.log(`Dispositivo ${deviceId} criado com sucesso`)
+            } else {
+                console.log(`Dispositivo ${deviceId} já existe`)
+            }
+        })
 
         await startWhatsAppConnection(deviceId)
         res.json({ 
@@ -81,5 +88,20 @@ router.get('/qr/:deviceId', (req, res) => {
         qr
     })
 })
+
+router.get('/status/:deviceId', async (req, res) => {
+    try {
+        const { deviceId } = req.params
+        const status = await checkDeviceConnection(deviceId)
+        res.json(status)
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to check device status',
+            details: error.message
+        })
+    }
+})
+
+
 
 export default router

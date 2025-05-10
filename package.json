@@ -9,10 +9,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "latest",
     "@hapi/boom": "latest",
+    "@whiskeysockets/baileys": "latest",
     "cors": "latest",
     "express": "latest",
-    "pino": "latest"
+    "pino": "latest",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
   }
 }
