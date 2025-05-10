@@ -3,6 +3,8 @@ import { logger } from '../config/logger.js'
 import { sessionManager } from './sessions.js'
 import EventEmitter from 'events'
 import { Boom } from '@hapi/boom'
+import { dispatchWebhook } from './webhook.js'
+
 
 const CONNECTION_STATUS = {
     CONNECTED: 'connected',
@@ -107,19 +109,22 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         for (const message of messages) {
-            // Skip messages sent by us
+            //if (message.key.fromMe) continue
             const { type: msgType, content } = extractMessageContent(message)
-            
-            console.log('Nova mensagem recebida:', {
-                id: message.key.id,
+            const messageData = {
+                deviceId,
+                type,
+                messageType: msgType,
                 from: message.key.remoteJid,
-                timestamp: message.messageTimestamp,
-                type: msgType,
-                content: content,
+                content,
+                timestamp: new Date(message.messageTimestamp * 1000).toISOString(),
                 pushName: message.pushName,
-                participant: message.key.participant || null,
-                status: message.status || null
-            })
+                isGroup: message.key.remoteJid.endsWith('@g.us'),
+                fromMe: message.key.fromMe
+            }
+    
+            console.log('Nova mensagem recebida:', messageData)
+            await dispatchWebhook('message.received', messageData)
         }
     })
 
@@ -152,6 +157,12 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
                 }
             }, 30000) // Check every 30 seconds
         }
+
+        await dispatchWebhook('connection.update', {
+            deviceId,
+            ...update
+        })
+        
         
         console.log(`Device ${deviceId}: connection update`, update)
     })

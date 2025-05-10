@@ -2,6 +2,7 @@ import express from 'express'
 import { sendMessageWTyping, isConnected, startWhatsAppConnection, getQRCode, checkDeviceConnection } from '../services/whatsapp.js'
 import DeviceModel from '../models/device_model.js'
 import { v4 as uuidv4 } from 'uuid'
+import Webhook from '../models/webhook_model.js'
 
 const router = express.Router()
 
@@ -94,6 +95,45 @@ router.get('/status/:deviceId', async (req, res) => {
     } catch (error) {
         res.status(500).json({
             error: 'Failed to check device status',
+            details: error.message
+        })
+    }
+})
+
+router.post('/webhooks', async (req, res) => {
+    try {
+        const { deviceId, event, url } = req.body
+        
+        if (!deviceId || !event || !url) {
+            return res.status(400).json({
+                error: 'deviceId, event and url are required'
+            })
+        }
+
+        const webhook = await Webhook.create({
+            deviceId,
+            event,
+            url
+        })
+
+        res.status(201).json(webhook)
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to create webhook',
+            details: error.message
+        })
+    }
+})
+
+router.get('/webhooks/:deviceId', async (req, res) => {
+    try {
+        const webhooks = await Webhook.findAll({
+            where: { deviceId: req.params.deviceId }
+        })
+        res.json(webhooks)
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to fetch webhooks',
             details: error.message
         })
     }
