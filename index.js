@@ -1,3 +1,5 @@
+import express from 'express'
+import cors from 'cors'
 import { Boom } from '@hapi/boom'
 import NodeCache from '@cacheable/node-cache'
 import readline from 'readline'
@@ -18,6 +20,69 @@ const {
     proto,
     useMultiFileAuthState
 } = pkg
+
+
+// Variável global para armazenar a instância do socket
+let globalSock = null;
+
+const sendMessageWTyping = async(msg, jid) => {
+    if (!globalSock) {
+        throw new Error('WhatsApp não está conectado')
+    }
+    
+    await globalSock.presenceSubscribe(jid)
+    await delay(500)
+
+    await globalSock.sendPresenceUpdate('composing', jid)
+    await delay(2000)
+
+    await globalSock.sendPresenceUpdate('paused', jid)
+
+    await globalSock.sendMessage(jid, msg)
+}
+
+const app = express()
+app.use(cors())
+app.use(express.json())
+
+// Rota POST para enviar mensagens
+app.post('/send-message', async (req, res) => {
+    try {
+        const { number, message } = req.body
+
+        if (!number || !message) {
+            return res.status(400).json({ 
+                error: 'Número e mensagem são obrigatórios' 
+            })
+        }
+
+        if (!globalSock) {
+            return res.status(500).json({ 
+                error: 'WhatsApp não está conectado' 
+            })
+        }
+
+        const jid = `${number}@s.whatsapp.net`
+        await sendMessageWTyping({ text: message }, jid)
+
+        res.json({ 
+            success: true, 
+            message: `Mensagem enviada para ${number}` 
+        })
+    } catch (error) {
+        console.error('Erro ao enviar mensagem:', error)
+        res.status(500).json({ 
+            error: 'Erro ao enviar mensagem',
+            details: error.message 
+        })
+    }
+})
+
+// Inicie o servidor HTTP
+const PORT = process.env.PORT || 3000
+app.listen(PORT, () => {
+    console.log(`API rodando na porta ${PORT}`)
+})
 
 // Replace P with pino
 const logger = pino({ 
@@ -63,7 +128,7 @@ const startSock = async() => {
 		getMessage,
 	})
 
-	handleCommand(sock);
+	globalSock = sock
 
 	// Pairing code for Web clients
 	if (usePairingCode && !sock.authState.creds.registered) {
@@ -73,17 +138,17 @@ const startSock = async() => {
 		console.log(`Pairing code: ${code}`)
 	}
 
-	const sendMessageWTyping = async(msg, jid) => {
-		await sock.presenceSubscribe(jid)
-		await delay(500)
+	// const sendMessageWTyping = async(msg, jid) => {
+	// 	await sock.presenceSubscribe(jid)
+	// 	await delay(500)
 
-		await sock.sendPresenceUpdate('composing', jid)
-		await delay(2000)
+	// 	await sock.sendPresenceUpdate('composing', jid)
+	// 	await delay(2000)
 
-		await sock.sendPresenceUpdate('paused', jid)
+	// 	await sock.sendPresenceUpdate('paused', jid)
 
-		await sock.sendMessage(jid, msg)
-	}
+	// 	await sock.sendMessage(jid, msg)
+	// }
 
 	// the process function lets you process all events that just occurred
 	// efficiently in a batch

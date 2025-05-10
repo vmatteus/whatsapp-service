@@ -1,9 +1,11 @@
 {
   "type": "module",
   "dependencies": {
+    "@cacheable/node-cache": "latest",
     "@hapi/boom": "latest",
     "@whiskeysockets/baileys": "latest",
-    "@cacheable/node-cache": "latest",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "pino": "latest"
   }
 }
