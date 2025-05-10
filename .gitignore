@@ -35,7 +35,7 @@ pids
 .LSOverride
 
 # Baileys specific
-baileys_auth_info/
+baileys_auth_info*
 *.store.json
 boot_analytics_test.json
 

@@ -1,38 +1,38 @@
 import pkg from '@whiskeysockets/baileys'
 import { logger } from '../config/logger.js'
+import { sessionManager } from './sessions.js'
 
 const { 
     makeWASocket,
     delay,
     DisconnectReason,
     fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore,
+    makeCacheableSignalKeyStore, // Add this import
     useMultiFileAuthState
 } = pkg
 
-let globalSock = null
-
-export const sendMessageWTyping = async(msg, jid) => {
-    if (!globalSock) {
-        throw new Error('WhatsApp não está conectado')
+export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
+    const sock = sessionManager.getSession(deviceId)
+    if (!sock) {
+        throw new Error(`Device ${deviceId} não está conectado`)
     }
     
-    await globalSock.presenceSubscribe(jid)
+    await sock.presenceSubscribe(jid)
     await delay(500)
 
-    await globalSock.sendPresenceUpdate('composing', jid)
+    await sock.sendPresenceUpdate('composing', jid)
     await delay(2000)
 
-    await globalSock.sendPresenceUpdate('paused', jid)
+    await sock.sendPresenceUpdate('paused', jid)
 
-    await globalSock.sendMessage(jid, msg)
+    await sock.sendMessage(jid, msg)
 }
 
-export const startWhatsAppConnection = async () => {
-    const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info')
+export const startWhatsAppConnection = async (deviceId = 'default') => {
+    const { state, saveCreds } = await sessionManager.createSession(deviceId)
     const { version, isLatest } = await fetchLatestBaileysVersion()
     
-    console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`)
+    console.log(`Device ${deviceId}: using WA v${version.join('.')}, isLatest: ${isLatest}`)
 
     const sock = makeWASocket({
         version,
@@ -45,20 +45,21 @@ export const startWhatsAppConnection = async () => {
         generateHighQualityLinkPreview: true
     })
 
-    globalSock = sock
+    sessionManager.addSession(deviceId, sock)
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update
         
         if(connection === 'close') {
             if(lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
-                startWhatsAppConnection()
+                startWhatsAppConnection(deviceId)
             } else {
-                console.log('Connection closed. You are logged out.')
+                console.log(`Device ${deviceId}: Connection closed. You are logged out.`)
+                sessionManager.removeSession(deviceId)
             }
         }
         
-        console.log('connection update', update)
+        console.log(`Device ${deviceId}: connection update`, update)
     })
 
     sock.ev.on('creds.update', saveCreds)
@@ -66,4 +67,10 @@ export const startWhatsAppConnection = async () => {
     return sock
 }
 
-export const isConnected = () => globalSock !== null
+export const isConnected = (deviceId = 'default') => {
+    return sessionManager.getSession(deviceId) !== null
+}
+
+export const listDevices = () => {
+    return sessionManager.getAllSessions()
+}

@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { startWhatsAppConnection } from './services/whatsapp.js'
-import messageRoutes from './routes/messages.js'
+import messageRoutes from './routes/routes.js'
 
 const app = express()
 app.use(cors())
@@ -17,4 +17,4 @@ app.listen(PORT, () => {
 })
 
 // Start WhatsApp connection
-startWhatsAppConnection()
+startWhatsAppConnection('device1')
