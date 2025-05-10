@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@hapi/boom": "latest",
+    "@whiskeysockets/baileys": "latest",
+    "@cacheable/node-cache": "latest",
+    "pino": "latest"
+  }
+}
