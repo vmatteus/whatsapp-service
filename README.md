@@ -52,7 +52,8 @@ curl -X POST http://localhost:3000/api/send-message \
 -H "Content-Type: application/json" \
 -d '{
     "number": "5511999999999",
-    "message": "Hello World!"
+    "message": "Hello World!",
+    "deviceId": "device1"
 }'
 ```
 
