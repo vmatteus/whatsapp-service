@@ -28,6 +28,15 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
     await sock.sendMessage(jid, msg)
 }
 
+const extractMessageContent = (message) => {
+    const messageType = Object.keys(message.message || {})[0]
+    const messageContent = message.message?.[messageType] || {}
+    return {
+        type: messageType,
+        content: messageType === 'conversation' ? messageContent : messageContent.text || JSON.stringify(messageContent)
+    }
+}
+
 export const startWhatsAppConnection = async (deviceId = 'default') => {
     const { state, saveCreds } = await sessionManager.createSession(deviceId)
     const { version, isLatest } = await fetchLatestBaileysVersion()
@@ -46,6 +55,25 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
     })
 
     sessionManager.addSession(deviceId, sock)
+
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        for (const message of messages) {
+            // Skip messages sent by us
+            if (message.key.fromMe) continue
+
+            const { type: msgType, content } = extractMessageContent(message)
+            
+            console.log('Nova mensagem recebida:', {
+                deviceId,
+                type,
+                messageType: msgType,
+                from: message.key.remoteJid,
+                content,
+                timestamp: new Date(message.messageTimestamp * 1000).toISOString(),
+                pushName: message.pushName
+            })
+        }
+    })
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update
