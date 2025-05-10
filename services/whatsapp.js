@@ -1,6 +1,7 @@
 import pkg from '@whiskeysockets/baileys'
 import { logger } from '../config/logger.js'
 import { sessionManager } from './sessions.js'
+import EventEmitter from 'events'
 
 const { 
     makeWASocket,
@@ -10,6 +11,10 @@ const {
     makeCacheableSignalKeyStore, // Add this import
     useMultiFileAuthState
 } = pkg
+
+const eventEmitter = new EventEmitter()
+
+let qrCodes = new Map()
 
 export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
     const sock = sessionManager.getSession(deviceId)
@@ -76,7 +81,13 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
     })
 
     sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update
+        const { connection, lastDisconnect, qr } = update
+        
+        if(qr) {
+            qrCodes.set(deviceId, qr)
+            eventEmitter.emit('qr.update', { deviceId, qr })
+            console.log(`Device ${deviceId}: new QR code generated`)
+        }
         
         if(connection === 'close') {
             if(lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
@@ -85,6 +96,12 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
                 console.log(`Device ${deviceId}: Connection closed. You are logged out.`)
                 sessionManager.removeSession(deviceId)
             }
+        }
+
+        if(connection === 'open') {
+            // Clear QR code when connected
+            qrCodes.delete(deviceId)
+            console.log(`Device ${deviceId}: connected successfully`)
         }
         
         console.log(`Device ${deviceId}: connection update`, update)
@@ -101,4 +118,13 @@ export const isConnected = (deviceId = 'default') => {
 
 export const listDevices = () => {
     return sessionManager.getAllSessions()
+}
+
+export const getQRCode = (deviceId = 'default') => {
+    return qrCodes.get(deviceId)
+}
+
+export const subscribeToQRUpdates = (callback) => {
+    eventEmitter.on('qr.update', callback)
+    return () => eventEmitter.off('qr.update', callback)
 }
