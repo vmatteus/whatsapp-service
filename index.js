@@ -63,6 +63,8 @@ const startSock = async() => {
 		getMessage,
 	})
 
+	handleCommand(sock);
+
 	// Pairing code for Web clients
 	if (usePairingCode && !sock.authState.creds.registered) {
 		// todo move to QR event
@@ -100,8 +102,8 @@ const startSock = async() => {
 					} else {
 						console.log('Connection closed. You are logged out.')
 					}
-				}
-
+				} 
+				
 				// WARNING: THIS WILL SEND A WAM EXAMPLE AND THIS IS A ****CAPTURED MESSAGE.****
 				// DO NOT ACTUALLY ENABLE THIS UNLESS YOU MODIFIED THE FILE.JSON!!!!!
 				// THE ANALYTICS IN THE FILE ARE OLD. DO NOT USE THEM.
@@ -313,6 +315,39 @@ const startSock = async() => {
 
 		// only if store is present
 		return proto.Message.fromObject({})
+	}
+
+	async function handleCommand(sock) {
+		const rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout
+		});
+	
+		console.log('\n=== Comandos disponíveis ===');
+		console.log('1. Enviar mensagem: digite "enviar NÚMERO MENSAGEM"');
+		console.log('Exemplo: enviar 5511999999999 Olá, tudo bem?\n');
+	
+		rl.on('line', async (input) => {
+			const [command, ...args] = input.trim().split(' ');
+			
+			if (command === 'enviar') {
+				const [number, ...messageWords] = args;
+				if (!number || messageWords.length === 0) {
+					console.log('Uso: enviar NÚMERO MENSAGEM');
+					return;
+				}
+	
+				const jid = `${number}@s.whatsapp.net`;
+				const text = messageWords.join(' ');
+	
+				try {
+					await sendMessageWTyping({ text }, jid);
+					console.log(`Mensagem enviada com sucesso para ${number}`);
+				} catch (error) {
+					console.error('Erro ao enviar mensagem:', error);
+				}
+			}
+		});
 	}
 }
 
