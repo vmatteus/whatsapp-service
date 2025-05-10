@@ -1,11 +1,18 @@
 {
+  "name": "whatsapp-service-api",
+  "version": "1.0.0",
   "type": "module",
+  "description": "WhatsApp API using Baileys",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
-    "@cacheable/node-cache": "latest",
-    "@hapi/boom": "latest",
     "@whiskeysockets/baileys": "latest",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
+    "@hapi/boom": "latest",
+    "cors": "latest",
+    "express": "latest",
     "pino": "latest"
   }
 }
