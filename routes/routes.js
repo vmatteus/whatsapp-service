@@ -1,6 +1,7 @@
 import express from 'express'
 import { sendMessageWTyping, isConnected, startWhatsAppConnection, getQRCode, checkDeviceConnection } from '../services/whatsapp.js'
 import DeviceModel from '../models/device_model.js'
+import { v4 as uuidv4 } from 'uuid'
 
 const router = express.Router()
 
@@ -38,13 +39,8 @@ router.post('/send-message', async (req, res) => {
 
 router.post('/connection', async (req, res) => {
     try {
-        const { deviceId } = req.body
         
-        if (!deviceId) {
-            return res.status(400).json({ 
-                error: 'deviceId is required' 
-            })
-        }
+        const deviceId = uuidv4()
 
         DeviceModel.findOrCreate({
             where: { id: deviceId },
@@ -60,7 +56,8 @@ router.post('/connection', async (req, res) => {
         await startWhatsAppConnection(deviceId)
         res.json({ 
             success: true, 
-            message: `Connection started for device ${deviceId}` 
+            deviceId: deviceId,
+            message: `Connection started for device ${deviceId}`,
         })
     } catch (error) {
         console.error('Error starting connection:', error)

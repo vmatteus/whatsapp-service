@@ -108,11 +108,18 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         for (const message of messages) {
             // Skip messages sent by us
-            if (message.key.fromMe) continue
-
             const { type: msgType, content } = extractMessageContent(message)
             
-            console.log('Nova mensagem recebida:', messages)
+            console.log('Nova mensagem recebida:', {
+                id: message.key.id,
+                from: message.key.remoteJid,
+                timestamp: message.messageTimestamp,
+                type: msgType,
+                content: content,
+                pushName: message.pushName,
+                participant: message.key.participant || null,
+                status: message.status || null
+            })
         }
     })
 
