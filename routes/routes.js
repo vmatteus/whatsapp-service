@@ -6,6 +6,52 @@ import Webhook from '../models/webhook_model.js'
 
 const router = express.Router()
 
+async function checkDatabaseHealth() {
+    try {
+        await DeviceModel.findOne();
+        return true;
+    } catch (error) {
+        console.error('Database health check failed:', error);
+        return false;
+    }
+}
+
+router.get('/health', async (req, res) => {
+    try {
+        const healthInfo = {
+            status: 'UP',
+            timestamp: new Date().toISOString(),
+            service: {
+                name: 'whatsapp-service-api',
+                version: process.env.npm_package_version || '1.0.0'
+            },
+            dependencies: {
+                database: await checkDatabaseHealth(),
+                whatsapp: {
+                    default: isConnected('default'),
+                    activeDevices: await DeviceModel.count()
+                }
+            },
+            uptime: process.uptime(),
+            memory: {
+                usage: process.memoryUsage().heapUsed / 1024 / 1024,
+                unit: 'MB'
+            }
+        };
+
+        const isHealthy = healthInfo.dependencies.database && 
+                         Object.values(healthInfo.dependencies.whatsapp).some(v => v);
+
+        res.status(isHealthy ? 200 : 503).json(healthInfo);
+    } catch (error) {
+        res.status(503).json({
+            status: 'DOWN',
+            timestamp: new Date().toISOString(),
+            error: error.message
+        });
+    }
+});
+
 router.post('/send-message', async (req, res) => {
     try {
         const { number, message, deviceId = 'default' } = req.body

@@ -1,0 +1,21 @@
+@hostname = http://localhost
+@port = 3000
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+@createdAt = {{$datetime iso8601}}
+@modifiedBy = {{$processEnv USERNAME}}
+
+### Health Check
+GET {{host}}/api/health
+Content-Type: {{contentType}}
+
+### Send Message
+POST {{host}}/api/send-message
+Content-Type: {{contentType}}
+
+{
+    "number": "555193995955",
+    "number": "555199999999",
+    "message": "oi",
+    "deviceId": "d272ab3c-2f2f-4130-9217-ceae86dbbb2a"
+}
