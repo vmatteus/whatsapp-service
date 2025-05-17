@@ -1,6 +1,7 @@
 import express from 'express'
 import { sendMessageWTyping, isConnected, startWhatsAppConnection, getQRCode, checkDeviceConnection } from '../services/whatsapp.js'
-import DeviceModel from '../models/device_model.js'
+import DeviceModel  from '../models/device_model.js'
+import Session from '../models/session_model.js'
 import { v4 as uuidv4 } from 'uuid'
 import Webhook from '../models/webhook_model.js'
 
@@ -89,7 +90,7 @@ router.post('/connection', async (req, res) => {
         
         const deviceId = uuidv4()
 
-        DeviceModel.findOrCreate({
+        await DeviceModel.findOrCreate({
             where: { id: deviceId },
             defaults: { isConnected: false }
         }).then(([device, created]) => {
@@ -97,6 +98,15 @@ router.post('/connection', async (req, res) => {
                 console.log(`Dispositivo ${deviceId} criado com sucesso`)
             } else {
                 console.log(`Dispositivo ${deviceId} já existe`)
+            }
+        })
+
+        await Session.findOrCreate({
+            where: { deviceId },
+            defaults: { creds: null, keys: null }
+        }).then(([session, created]) => {
+            if (created) {
+                console.log(`Sessão ${deviceId} criada com sucesso`)
             }
         })
 

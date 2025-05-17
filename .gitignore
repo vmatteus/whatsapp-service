@@ -23,6 +23,7 @@ pids
 .env.*.local
 
 # IDE - VSCode
+.vscode/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

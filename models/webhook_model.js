@@ -31,6 +31,8 @@ const Webhook = sequelize.define('Webhook', {
         type: DataTypes.TEXT,
         allowNull: true
     }
-})
+}, {
+    tableName: 'webhooks',
+});
 
 export default Webhook
