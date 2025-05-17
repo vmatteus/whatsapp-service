@@ -1,0 +1,22 @@
+{
+    "name": "meu-app",
+    "scripts": {
+        "dokku": {
+            "predeploy": "echo Predeploy rodando"
+        }
+    },
+    "formation": {
+        "web": {
+            "quantity": 1,
+            "size": "free"
+        }
+    },
+    "healthcheck": {
+        "web": {
+            "path": "/api/health",
+            "interval": "10s",
+            "timeout": "5s",
+            "max_retries": 3
+        }
+    }
+}
