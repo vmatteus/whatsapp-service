@@ -5,10 +5,22 @@
 @createdAt = {{$datetime iso8601}}
 @modifiedBy = {{$processEnv USERNAME}}
 
+# @name helth
 ### Health Check
 GET {{host}}/api/health
 Content-Type: {{contentType}}
 
+# @name connection
+### Add New Device
+POST {{host}}/api/connection
+
+###
+@deviceId = ""
+
+### Get Device QR Code
+{{host}}/api/qr/{{deviceId}}
+
+# @name send-message
 ### Send Message
 POST {{host}}/api/send-message
 Content-Type: {{contentType}}
@@ -16,5 +28,5 @@ Content-Type: {{contentType}}
 {
     "number": "555199999999",
     "message": "oi",
-    "deviceId": "d272ab3c-2f2f-4130-9217-ceae86dbbb2a"
+    "deviceId": "{{deviceId}}"
 }
