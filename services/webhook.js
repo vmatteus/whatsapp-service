@@ -14,15 +14,7 @@ const transformPayload = (event, data) => {
             return {
                 type: 'message_received',
                 deviceId: data.deviceId,
-                message: {
-                    from: data.from,
-                    type: data.messageType,
-                    content: data.content,
-                    timestamp: data.timestamp,
-                    sender: data.pushName,
-                    isGroup: data.isGroup,
-                    fromMe: data.fromMe
-                }
+                message: data
             }
         case EVENT_TYPES.CONNECTION_UPDATE:
             return {

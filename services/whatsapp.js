@@ -76,7 +76,19 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
 
     await sock.sendPresenceUpdate('paused', jid)
 
-    await sock.sendMessage(jid, msg)
+    const messageToSend = {
+        text: msg,
+        contextInfo: {
+            externalAdReply: {
+                title: "BotMessage",
+                body: "Mensagem_API",
+                mediaType: 1,
+                renderLargerThumbnail: true,
+            }
+        }
+    };
+
+    await sock.sendMessage(jid, messageToSend)
 }
 
 const extractMessageContent = (message) => {
@@ -107,8 +119,13 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
 
     sessionManager.addSession(deviceId, sock)
 
+    //message.message.extendedTextMessage.contextInfo.externalAdReply
+
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         for (const message of messages) {
+
+            var messageApi = message.message?.extendedTextMessage?.contextInfo?.externalAdReply?.body
+
             //if (message.key.fromMe) continue
             const { type: msgType, content } = extractMessageContent(message)
             const messageData = {
@@ -120,7 +137,16 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
                 timestamp: new Date(message.messageTimestamp * 1000).toISOString(),
                 pushName: message.pushName,
                 isGroup: message.key.remoteJid.endsWith('@g.us'),
-                fromMe: message.key.fromMe
+                fromMe: message.key.fromMe,
+                isNewsletter: message.key.remoteJid.includes('@newsletter'),
+                isBroadcast: message.key.remoteJid.endsWith('@broadcast'),
+                fromApi: messageApi == "Mensagem_API",
+                
+                // Add debug info
+                messageSource: message.key.remoteJid.includes('@newsletter') ? 'Newsletter' : 
+                            message.key.remoteJid.endsWith('@g.us') ? 'Group' : 
+                            message.key.remoteJid.endsWith('@broadcast') ? 'Broadcast' : 
+                            'Direct Message'
             }
     
             console.log('Nova mensagem recebida:', messageData)
