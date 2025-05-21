@@ -76,19 +76,38 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
 
     await sock.sendPresenceUpdate('paused', jid)
 
-    const messageToSend = {
-        text: String(msg.text),
-        contextInfo: {
-            externalAdReply: {
-                title: "BotMessage",
-                body: "Mensagem_API",
-                mediaType: 1,
-                renderLargerThumbnail: false,
-            }
-        }
-    };
+    // Exemplo conceitual com botões
+    // const buttons = [
+    //     { buttonId: 'bot_action_1_ID-API', buttonText: { displayText: 'Opção 1' }, type: 1 },
+    //     { buttonId: 'bot_action_2_ID-API', buttonText: { displayText: 'Opção 2' }, type: 1 }
+    // ];
 
-    await sock.sendMessage(jid, messageToSend)
+    // const buttonMessage = {
+    //     text: "Escolha uma opção:",
+    //     footer: 'Mensagem do Bot',
+    //     buttons: buttons,
+    //     headerType: 1
+    // };
+
+    // const messageToSend = {
+    //     text: String(msg.text),
+    //     contextInfo: {
+    //         externalAdReply: {
+    //             title: "BotMessage",
+    //             body: "Mensagem_API",
+    //             mediaType: 1,
+    //             renderLargerThumbnail: false,
+    //         }
+    //     }
+    // };
+
+    const { key } = await sock.sendMessage(jid, msg)
+    const messageId = key.id
+
+    // TODO: Implementar lógica para salvar o ID da mensagem no banco de dados
+    // salvar o ID da mensagem no banco de dados
+    // comparar com a mensagem recebida
+
 }
 
 const extractMessageContent = (message) => {
