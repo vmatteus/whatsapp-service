@@ -83,7 +83,7 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
                 title: "BotMessage",
                 body: "Mensagem_API",
                 mediaType: 1,
-                renderLargerThumbnail: true,
+                renderLargerThumbnail: false,
             }
         }
     };
