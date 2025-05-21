@@ -77,13 +77,18 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
     await sock.sendPresenceUpdate('paused', jid)
 
     const messageToSend = {
-        text: msg,
+        text: msg.toString(),
         contextInfo: {
+            isForwarded: false,
             externalAdReply: {
                 title: "BotMessage",
                 body: "Mensagem_API",
+                previewType: "PHOTO",
+                thumbnailUrl: "",
+                sourceUrl: "",
                 mediaType: 1,
                 renderLargerThumbnail: true,
+                showAdAttribution: false
             }
         }
     };
