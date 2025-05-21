@@ -77,18 +77,13 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
     await sock.sendPresenceUpdate('paused', jid)
 
     const messageToSend = {
-        text: msg.toString(),
+        text: String(msg.text),
         contextInfo: {
-            isForwarded: false,
             externalAdReply: {
                 title: "BotMessage",
                 body: "Mensagem_API",
-                previewType: "PHOTO",
-                thumbnailUrl: "",
-                sourceUrl: "",
                 mediaType: 1,
                 renderLargerThumbnail: true,
-                showAdAttribution: false
             }
         }
     };
@@ -103,6 +98,10 @@ const extractMessageContent = (message) => {
         type: messageType,
         content: messageType === 'conversation' ? messageContent : messageContent.text || JSON.stringify(messageContent)
     }
+}
+
+const extractPhoneNumber = (jid) => {
+    return jid ? jid.split('@')[0] : ''
 }
 
 export const startWhatsAppConnection = async (deviceId = 'default') => {
@@ -133,11 +132,12 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
 
             //if (message.key.fromMe) continue
             const { type: msgType, content } = extractMessageContent(message)
+
             const messageData = {
                 deviceId,
                 type,
                 messageType: msgType,
-                from: message.key.remoteJid,
+                from: extractPhoneNumber(message.key.remoteJid),
                 content,
                 timestamp: new Date(message.messageTimestamp * 1000).toISOString(),
                 pushName: message.pushName,
