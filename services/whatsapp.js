@@ -122,6 +122,8 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         for (const message of messages) {
 
+            await delay(300)
+
             const savedMessage = await Message.findOne({
                 where: {
                     messageId: message.key.id,
