@@ -4,7 +4,7 @@ import { sessionManager } from './sessions.js'
 import EventEmitter from 'events'
 import { Boom } from '@hapi/boom'
 import { dispatchWebhook } from './webhook.js'
-
+import Message from '../models/message_model.js'
 
 const CONNECTION_STATUS = {
     CONNECTED: 'connected',
@@ -76,38 +76,13 @@ export const sendMessageWTyping = async(msg, jid, deviceId = 'default') => {
 
     await sock.sendPresenceUpdate('paused', jid)
 
-    // Exemplo conceitual com botões
-    // const buttons = [
-    //     { buttonId: 'bot_action_1_ID-API', buttonText: { displayText: 'Opção 1' }, type: 1 },
-    //     { buttonId: 'bot_action_2_ID-API', buttonText: { displayText: 'Opção 2' }, type: 1 }
-    // ];
-
-    // const buttonMessage = {
-    //     text: "Escolha uma opção:",
-    //     footer: 'Mensagem do Bot',
-    //     buttons: buttons,
-    //     headerType: 1
-    // };
-
-    // const messageToSend = {
-    //     text: String(msg.text),
-    //     contextInfo: {
-    //         externalAdReply: {
-    //             title: "BotMessage",
-    //             body: "Mensagem_API",
-    //             mediaType: 1,
-    //             renderLargerThumbnail: false,
-    //         }
-    //     }
-    // };
-
     const { key } = await sock.sendMessage(jid, msg)
     const messageId = key.id
 
-    // TODO: Implementar lógica para salvar o ID da mensagem no banco de dados
-    // salvar o ID da mensagem no banco de dados
-    // comparar com a mensagem recebida
-
+    return {
+        messageId,
+        jid,
+    }
 }
 
 const extractMessageContent = (message) => {
@@ -147,7 +122,12 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         for (const message of messages) {
 
-            var messageApi = message.message?.extendedTextMessage?.contextInfo?.externalAdReply?.body
+            const savedMessage = await Message.findOne({
+                where: {
+                    messageId: message.key.id,
+                    direction: 'outbound'
+                }
+            })
 
             //if (message.key.fromMe) continue
             const { type: msgType, content } = extractMessageContent(message)
@@ -164,10 +144,13 @@ export const startWhatsAppConnection = async (deviceId = 'default') => {
                 fromMe: message.key.fromMe,
                 isNewsletter: message.key.remoteJid.includes('@newsletter'),
                 isBroadcast: message.key.remoteJid.endsWith('@broadcast'),
-                fromApi: messageApi == "Mensagem_API",
+                fromApi: savedMessage !== null, // Set based on database check
+                messageId: message.key.id,
+                savedMessageId: savedMessage?.id, // Include database ID if found
                 
                 // Add debug info
-                messageSource: message.key.remoteJid.includes('@newsletter') ? 'Newsletter' : 
+                messageSource: savedMessage ? 'API' :
+                            message.key.remoteJid.includes('@newsletter') ? 'Newsletter' : 
                             message.key.remoteJid.endsWith('@g.us') ? 'Group' : 
                             message.key.remoteJid.endsWith('@broadcast') ? 'Broadcast' : 
                             'Direct Message'

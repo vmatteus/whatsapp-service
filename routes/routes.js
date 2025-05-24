@@ -4,6 +4,7 @@ import DeviceModel  from '../models/device_model.js'
 import Session from '../models/session_model.js'
 import { v4 as uuidv4 } from 'uuid'
 import Webhook from '../models/webhook_model.js'
+import Message from '../models/message_model.js'
 
 const router = express.Router()
 
@@ -70,11 +71,28 @@ router.post('/send-message', async (req, res) => {
         }
 
         const jid = `${number}@s.whatsapp.net`
-        await sendMessageWTyping({ text: message }, jid, deviceId)
+        var result = await sendMessageWTyping({ text: message }, jid, deviceId)
+
+        if (!result || !result.messageId) {
+            return res.status(500).json({ 
+                error: 'Erro ao enviar mensagem. Verifique o número e tente novamente.' 
+            })
+        }
+
+        const savedMessage = await Message.create({
+            messageId: result.messageId,
+            deviceId,
+            number,
+            message,
+            status: 'sent',
+            direction: 'outbound'
+        })
 
         res.json({ 
             success: true, 
-            message: `Mensagem enviada para ${number} usando device ${deviceId}` 
+            message: `Mensagem enviada para ${number} usando device ${deviceId}`,
+            messageId: result.messageId,
+            savedMessage: savedMessage.id
         })
     } catch (error) {
         console.error('Erro ao enviar mensagem:', error)
